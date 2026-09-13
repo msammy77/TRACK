@@ -160,7 +160,7 @@
       <ul>
         <li>Each day has up to four blocks: UKMLA questions, content review, OSCE/CPSA practice, and MCCQE/NAC questions.</li>
         <li>Tick a box when you finish that block; the day and weekly progress update automatically.</li>
-        <li>Return to this page during the day to keep yourself accountable; progress is kept in this session only.</li>
+        <li>Your progress is now saved per device using localStorage, so it will still be there when you re-open this page in the same browser.</li>
       </ul>
     </section>
 
@@ -173,7 +173,7 @@
       { number: 2, title: 'Week 2 – Respiratory', ukmlaFocus: 'UKMLA: Respiratory (asthma, COPD, pneumonia, PE, pleural disease)', osceFocus: 'UK CPSA: Respiratory history & exam', mccqeFocus: 'MCCQE: Respiratory cases & asthma/COPD care' },
       { number: 3, title: 'Week 3 – Gastroenterology & hepatology', ukmlaFocus: 'UKMLA: GI/hepatology (abdominal pain, GI bleed, jaundice, diarrhoea/constipation)', osceFocus: 'UK CPSA: Abdominal exam, GI bleed counselling', mccqeFocus: 'MCCQE: GI/liver disease, prevention & screening' },
       { number: 4, title: 'Week 4 – Renal & urology', ukmlaFocus: 'UKMLA: Renal/urology (AKI, CKD, LUTS, haematuria)', osceFocus: 'UK CPSA: Renal/urology exam, LUTS counselling', mccqeFocus: 'MCCQE: Renal cases, CKD & hypertension follow-up' },
-      { number: 5, title: 'Week 5 – Endocrine & diabetes', ukmlaFocus: 'UKMLA: Endocrine/diabetes (DKA, HHS, thyroid, adrenal disorders)', osceFocus: 'UK CPSA: Diabetic review, thyroid exam', mccqeFocus: 'MCCQE: Endocrine & diabetes, health promotion', },
+      { number: 5, title: 'Week 5 – Endocrine & diabetes', ukmlaFocus: 'UKMLA: Endocrine/diabetes (DKA, HHS, thyroid, adrenal disorders)', osceFocus: 'UK CPSA: Diabetic review, thyroid exam', mccqeFocus: 'MCCQE: Endocrine & diabetes, health promotion' },
       { number: 6, title: 'Week 6 – Neurology', ukmlaFocus: 'UKMLA: Neurology (headache, seizures, stroke/TIA, neuropathies)', osceFocus: 'UK CPSA: Neuro screening exam, stroke/TIA counselling', mccqeFocus: 'MCCQE: Neuro vignettes & acute stroke care' },
       { number: 7, title: 'Week 7 – Infectious disease & haematology/oncology', ukmlaFocus: 'UKMLA: ID & haem/onc (fever, sepsis, meningitis, HIV, anaemias, malignancy)', osceFocus: 'UK CPSA: Fever/sepsis assessment, anaemia counselling', mccqeFocus: 'MCCQE: Infection/oncology, vaccination & stewardship' },
       { number: 8, title: 'Week 8 – Emergency & acute care', ukmlaFocus: 'UKMLA: EM & critical care (ABCDE, shock, ACS, trauma basics)', osceFocus: 'UK CPSA: Acute scenarios (collapse, chest pain, sepsis)', mccqeFocus: 'MCCQE: Acute care dimension, ED presentations' },
@@ -196,6 +196,9 @@
 
     const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat'];
 
+    const STORAGE_KEY = 'ukmlaStudyProgress_v1';
+    const completionState = {}; // {weekNumber: {dayIndex: {blockKey: boolean}}}
+
     const weekSelect = document.getElementById('week-select');
     const weekTitle = document.getElementById('week-title');
     const weekFocus = document.getElementById('week-focus');
@@ -203,8 +206,26 @@
     const weekProgressFill = document.getElementById('week-progress-fill');
     const overallProgressLabel = document.getElementById('overall-progress-label');
 
-    // state in memory only
-    const completionState = {}; // {weekNumber: {dayIndex: {blockKey: boolean}}}
+    function loadProgress() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      try {
+        const parsed = JSON.parse(saved);
+        Object.keys(parsed).forEach(weekNumber => {
+          completionState[weekNumber] = parsed[weekNumber];
+        });
+      } catch (e) {
+        console.warn('Failed to parse saved progress', e);
+      }
+    }
+
+    function saveProgress() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(completionState));
+      } catch (e) {
+        console.warn('Failed to save progress', e);
+      }
+    }
 
     function initWeekOptions() {
       weeks.forEach(week => {
@@ -219,13 +240,17 @@
     function ensureWeekState(weekNumber) {
       if (!completionState[weekNumber]) {
         completionState[weekNumber] = {};
-        dayNames.forEach((_, dayIndex) => {
-          completionState[weekNumber][dayIndex] = {};
-          dailyBlocks.forEach(block => {
-            completionState[weekNumber][dayIndex][block.key] = false;
-          });
-        });
       }
+      dayNames.forEach((_, dayIndex) => {
+        if (!completionState[weekNumber][dayIndex]) {
+          completionState[weekNumber][dayIndex] = {};
+        }
+        dailyBlocks.forEach(block => {
+          if (typeof completionState[weekNumber][dayIndex][block.key] !== 'boolean') {
+            completionState[weekNumber][dayIndex][block.key] = false;
+          }
+        });
+      });
     }
 
     function renderWeek(weekNumber) {
@@ -262,7 +287,7 @@
           const checkbox = document.createElement('input');
           checkbox.type = 'checkbox';
           checkbox.id = `w${weekNumber}-d${dayIndex}-${block.key}`;
-          checkbox.checked = completionState[weekNumber][dayIndex][block.key];
+          checkbox.checked = !!completionState[weekNumber][dayIndex][block.key];
 
           const label = document.createElement('label');
           label.htmlFor = checkbox.id;
@@ -280,6 +305,7 @@
             completionState[weekNumber][dayIndex][block.key] = checkbox.checked;
             li.classList.toggle('completed', checkbox.checked);
             updateProgress();
+            saveProgress();
           });
 
           li.appendChild(checkbox);
@@ -323,6 +349,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      loadProgress();
       initWeekOptions();
       renderWeek(1);
       weekSelect.addEventListener('change', () => {
