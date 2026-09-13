@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>UKMLA & MCCQE Study Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { text-size-adjust: none; scroll-behavior: smooth; }
+    body {
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+      background: #f7f6f2;
+      color: #28251d;
+      padding: 1.5rem;
+    }
+    h1 { font-size: 1.6rem; margin-bottom: 0.75rem; }
+    h2 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+    p { margin-bottom: 0.75rem; max-width: 70ch; }
+    .app {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #fbfbf9;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      padding: 1.5rem 1.5rem 2rem;
+    }
+    .top-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .top-bar > div { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+    label { font-size: 0.9rem; color: #555; }
+    select, button {
+      font: inherit;
+      padding: 0.4rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(0,0,0,0.1);
+      background: #f9f8f5;
+    }
+    button {
+      cursor: pointer;
+      background: #01696f;
+      color: #f9f8f4;
+      border-color: #01696f;
+    }
+    button:hover { background: #0c4e54; }
+    .week-meta {
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      background: #f3f0ec;
+      font-size: 0.9rem;
+    }
+    .week-meta strong { font-weight: 600; }
+    .progress-bar {
+      margin-top: 0.5rem;
+      height: 0.5rem;
+      border-radius: 999px;
+      background: #edeae5;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #01696f;
+      transition: width 0.2s ease-out;
+    }
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+    .day-card {
+      background: #fff;
+      border-radius: 0.6rem;
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .day-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.25rem;
+    }
+    .day-name { font-weight: 600; font-size: 0.95rem; }
+    .day-label { font-size: 0.75rem; color: #777; }
+    .tasks { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
+    .task {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+    }
+    .task input[type="checkbox"] {
+      margin-top: 0.1rem;
+      flex-shrink: 0;
+    }
+    .task label {
+      cursor: pointer;
+      color: #333;
+    }
+    .task.completed label {
+      text-decoration: line-through;
+      color: #999;
+    }
+    .legend {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: #666;
+    }
+    .legend ul { list-style: disc; margin-left: 1.1rem; margin-top: 0.25rem; }
+    .footer-note {
+      margin-top: 1.25rem;
+      font-size: 0.8rem;
+      color: #777;
+    }
+    @media (max-width: 640px) {
+      body { padding: 0.75rem; }
+      .app { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" aria-label="UKMLA and MCCQE daily study tracker">
+    <h1>UKMLA & MCCQE Study Tracker</h1>
+    <p>Use this lightweight app to tick off your daily study blocks for each week of the UKMLA‑first plan, with MCCQE/NAC practice layered in. Simply pick the week you are on and cross off blocks as you complete them.</p>
+
+    <section class="top-bar" aria-label="Week controls and overall progress">
+      <div>
+        <label for="week-select">Week:</label>
+        <select id="week-select" aria-label="Select study week"></select>
+      </div>
+      <div>
+        <span id="overall-progress-label">Overall completion: 0%</span>
+      </div>
+    </section>
+
+    <section class="week-meta" aria-label="Weekly focus summary">
+      <div><strong id="week-title"></strong></div>
+      <div id="week-focus"></div>
+      <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="week-progress-fill"></div></div>
+    </section>
+
+    <section aria-label="Day cards">
+      <div class="days-grid" id="days-grid"></div>
+    </section>
+
+    <section class="legend" aria-label="Legend and usage">
+      <h2>How to use</h2>
+      <ul>
+        <li>Each day has up to four blocks: UKMLA questions, content review, OSCE/CPSA practice, and MCCQE/NAC questions.</li>
+        <li>Tick a box when you finish that block; the day and weekly progress update automatically.</li>
+        <li>Return to this page during the day to keep yourself accountable; progress is kept in this session only.</li>
+      </ul>
+    </section>
+
+    <p class="footer-note">Tip: Bookmark this page on your phone or laptop and open it alongside your question bank or OSCE practice so you can cross off blocks as you go.</p>
+  </main>
+
+  <script>
+    const weeks = [
+      { number: 1, title: 'Week 1 – Cardiology foundations', ukmlaFocus: 'UKMLA: Cardiology (chest pain, dyspnoea, arrhythmias, heart failure)', osceFocus: 'UK CPSA: Cardio history & exam', mccqeFocus: 'MCCQE: Cardio vignettes & chest pain differentials' },
+      { number: 2, title: 'Week 2 – Respiratory', ukmlaFocus: 'UKMLA: Respiratory (asthma, COPD, pneumonia, PE, pleural disease)', osceFocus: 'UK CPSA: Respiratory history & exam', mccqeFocus: 'MCCQE: Respiratory cases & asthma/COPD care' },
+      { number: 3, title: 'Week 3 – Gastroenterology & hepatology', ukmlaFocus: 'UKMLA: GI/hepatology (abdominal pain, GI bleed, jaundice, diarrhoea/constipation)', osceFocus: 'UK CPSA: Abdominal exam, GI bleed counselling', mccqeFocus: 'MCCQE: GI/liver disease, prevention & screening' },
+      { number: 4, title: 'Week 4 – Renal & urology', ukmlaFocus: 'UKMLA: Renal/urology (AKI, CKD, LUTS, haematuria)', osceFocus: 'UK CPSA: Renal/urology exam, LUTS counselling', mccqeFocus: 'MCCQE: Renal cases, CKD & hypertension follow-up' },
+      { number: 5, title: 'Week 5 – Endocrine & diabetes', ukmlaFocus: 'UKMLA: Endocrine/diabetes (DKA, HHS, thyroid, adrenal disorders)', osceFocus: 'UK CPSA: Diabetic review, thyroid exam', mccqeFocus: 'MCCQE: Endocrine & diabetes, health promotion', },
+      { number: 6, title: 'Week 6 – Neurology', ukmlaFocus: 'UKMLA: Neurology (headache, seizures, stroke/TIA, neuropathies)', osceFocus: 'UK CPSA: Neuro screening exam, stroke/TIA counselling', mccqeFocus: 'MCCQE: Neuro vignettes & acute stroke care' },
+      { number: 7, title: 'Week 7 – Infectious disease & haematology/oncology', ukmlaFocus: 'UKMLA: ID & haem/onc (fever, sepsis, meningitis, HIV, anaemias, malignancy)', osceFocus: 'UK CPSA: Fever/sepsis assessment, anaemia counselling', mccqeFocus: 'MCCQE: Infection/oncology, vaccination & stewardship' },
+      { number: 8, title: 'Week 8 – Emergency & acute care', ukmlaFocus: 'UKMLA: EM & critical care (ABCDE, shock, ACS, trauma basics)', osceFocus: 'UK CPSA: Acute scenarios (collapse, chest pain, sepsis)', mccqeFocus: 'MCCQE: Acute care dimension, ED presentations' },
+      { number: 9, title: 'Week 9 – MSK & rheumatology', ukmlaFocus: 'UKMLA: MSK/rheum (OA, RA, back pain, fractures, inflammatory arthropathies)', osceFocus: 'UK CPSA: Knee/shoulder/back exam, red-flag screening', mccqeFocus: 'MCCQE: MSK chronic pain, OA/RA management' },
+      { number: 10, title: 'Week 10 – Surgery & peri‑operative care', ukmlaFocus: 'UKMLA: Surgery (acute abdomen, hernias, post‑op complications, DVT, trauma)', osceFocus: 'UK CPSA: Pre‑op assessment, post‑op complication review', mccqeFocus: 'MCCQE: Surgery, peri‑operative risk & trauma basics' },
+      { number: 11, title: 'Week 11 – Obstetrics', ukmlaFocus: 'UKMLA: Obstetrics (antenatal care, pre‑eclampsia, labour complications, PPH)', osceFocus: 'UK CPSA: Antenatal care & labour complication counselling', mccqeFocus: 'MCCQE: OB prenatal screening & labour emergencies' },
+      { number: 12, title: 'Week 12 – Gynaecology', ukmlaFocus: 'UKMLA: Gyn (vaginal bleeding, pelvic pain, contraception, infertility, screening)', osceFocus: 'UK CPSA: Gyn history, contraception counselling', mccqeFocus: 'MCCQE: Gyn, sexual health & cancer screening' },
+      { number: 13, title: 'Week 13 – Paediatrics', ukmlaFocus: 'UKMLA: Paeds (fever, breathing difficulty, vomiting, growth, safeguarding)', osceFocus: 'UK CPSA: Paeds resp exam, febrile child assessment', mccqeFocus: 'MCCQE: Paeds emergencies & development' },
+      { number: 14, title: 'Week 14 – Psychiatry, geriatrics & palliative care', ukmlaFocus: 'UKMLA: Psych/geri/palliative (depression, psychosis, dementia, delirium, capacity, end‑of‑life)', osceFocus: 'UK CPSA: Mood/anxiety, cognitive assessment, capacity & EOL discussions', mccqeFocus: 'MCCQE: Psychosocial aspects, mental health & EOL care' },
+      { number: 15, title: 'Week 15 – Professionalism, ethics, law & public health', ukmlaFocus: 'UKMLA: Professional knowledge (consent, capacity, confidentiality, DNACPR, safeguarding, screening, complaints)', osceFocus: 'UK CPSA: Professionalism stations (consent, breaking bad news, complaints)', mccqeFocus: 'MCCQE: Ethics, legal issues & public health counselling' },
+      { number: 16, title: 'Week 16 – Mixed high‑yield review & mocks', ukmlaFocus: 'UKMLA: Mixed high‑yield review across all systems, timed AKT‑style blocks', osceFocus: 'UK CPSA: Full circuits with mixed stations', mccqeFocus: 'MCCQE: Full mixed mocks & NAC‑style 12‑station circuits' }
+    ];
+
+    const dailyBlocks = [
+      { key: 'ukmla', label: 'UKMLA questions (system focus)' },
+      { key: 'review', label: 'Content review & notes' },
+      { key: 'osce', label: 'OSCE/CPSA/NAC station practice' },
+      { key: 'mccqe', label: 'MCCQE1/NAC question blocks' }
+    ];
+
+    const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    const weekSelect = document.getElementById('week-select');
+    const weekTitle = document.getElementById('week-title');
+    const weekFocus = document.getElementById('week-focus');
+    const daysGrid = document.getElementById('days-grid');
+    const weekProgressFill = document.getElementById('week-progress-fill');
+    const overallProgressLabel = document.getElementById('overall-progress-label');
+
+    // state in memory only
+    const completionState = {}; // {weekNumber: {dayIndex: {blockKey: boolean}}}
+
+    function initWeekOptions() {
+      weeks.forEach(week => {
+        const opt = document.createElement('option');
+        opt.value = week.number;
+        opt.textContent = `${week.number} – ${week.title}`;
+        weekSelect.appendChild(opt);
+      });
+      weekSelect.value = 1;
+    }
+
+    function ensureWeekState(weekNumber) {
+      if (!completionState[weekNumber]) {
+        completionState[weekNumber] = {};
+        dayNames.forEach((_, dayIndex) => {
+          completionState[weekNumber][dayIndex] = {};
+          dailyBlocks.forEach(block => {
+            completionState[weekNumber][dayIndex][block.key] = false;
+          });
+        });
+      }
+    }
+
+    function renderWeek(weekNumber) {
+      const week = weeks.find(w => w.number === weekNumber);
+      ensureWeekState(weekNumber);
+      weekTitle.textContent = week.title;
+      weekFocus.innerHTML = `<strong>UKMLA focus:</strong> ${week.ukmlaFocus}<br><strong>OSCE focus:</strong> ${week.osceFocus}<br><strong>MCCQE/NAC focus:</strong> ${week.mccqeFocus}`;
+
+      daysGrid.innerHTML = '';
+
+      dayNames.forEach((dayName, dayIndex) => {
+        const card = document.createElement('article');
+        card.className = 'day-card';
+        card.setAttribute('aria-label', `Study blocks for ${dayName}`);
+
+        const header = document.createElement('div');
+        header.className = 'day-card-header';
+        const nameEl = document.createElement('div');
+        nameEl.className = 'day-name';
+        nameEl.textContent = dayName;
+        const labelEl = document.createElement('div');
+        labelEl.className = 'day-label';
+        labelEl.textContent = 'Up to 3 hours';
+        header.appendChild(nameEl);
+        header.appendChild(labelEl);
+
+        const tasksList = document.createElement('ul');
+        tasksList.className = 'tasks';
+
+        dailyBlocks.forEach(block => {
+          const li = document.createElement('li');
+          li.className = 'task';
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = `w${weekNumber}-d${dayIndex}-${block.key}`;
+          checkbox.checked = completionState[weekNumber][dayIndex][block.key];
+
+          const label = document.createElement('label');
+          label.htmlFor = checkbox.id;
+          let labelText = block.label;
+          if (block.key === 'ukmla') labelText += ` – ${week.ukmlaFocus.split('(')[0].replace('UKMLA:','').trim()}`;
+          if (block.key === 'osce') labelText += ` – ${week.osceFocus.split(':')[1] ? week.osceFocus.split(':')[1].trim() : week.osceFocus}`;
+          if (block.key === 'mccqe') labelText += ` – ${week.mccqeFocus.split(':')[0].replace('MCCQE','').trim()}`;
+          label.textContent = labelText;
+
+          if (checkbox.checked) {
+            li.classList.add('completed');
+          }
+
+          checkbox.addEventListener('change', () => {
+            completionState[weekNumber][dayIndex][block.key] = checkbox.checked;
+            li.classList.toggle('completed', checkbox.checked);
+            updateProgress();
+          });
+
+          li.appendChild(checkbox);
+          li.appendChild(label);
+          tasksList.appendChild(li);
+        });
+
+        card.appendChild(header);
+        card.appendChild(tasksList);
+        daysGrid.appendChild(card);
+      });
+
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const totalBlocksPerWeek = dayNames.length * dailyBlocks.length;
+      const currentWeekNumber = Number(weekSelect.value);
+      ensureWeekState(currentWeekNumber);
+      let completedCurrentWeek = 0;
+      let totalCompleted = 0;
+      let totalBlocksAllWeeks = weeks.length * totalBlocksPerWeek;
+
+      weeks.forEach(week => {
+        ensureWeekState(week.number);
+        dayNames.forEach((_, dayIndex) => {
+          dailyBlocks.forEach(block => {
+            if (completionState[week.number][dayIndex][block.key]) {
+              totalCompleted++;
+              if (week.number === currentWeekNumber) completedCurrentWeek++;
+            }
+          });
+        });
+      });
+
+      const weekPercent = Math.round((completedCurrentWeek / totalBlocksPerWeek) * 100);
+      const overallPercent = Math.round((totalCompleted / totalBlocksAllWeeks) * 100);
+
+      weekProgressFill.style.width = weekPercent + '%';
+      overallProgressLabel.textContent = `Overall completion: ${overallPercent}%`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initWeekOptions();
+      renderWeek(1);
+      weekSelect.addEventListener('change', () => {
+        renderWeek(Number(weekSelect.value));
+      });
+    });
+  </script>
+</body>
+</html>
